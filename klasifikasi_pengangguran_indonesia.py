@@ -1,57 +1,47 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[2]:
-
-
-#mengimport 3 paket utama
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import csv
 import streamlit as st
-from datetime import datetime, timedelta
 
+# ===============================
+# CONFIG
+# ===============================
+st.set_page_config(
+    page_title="Dashboard Analisis Pendidikan",
+    layout="wide"
+)
 
-# In[3]:
+st.title("📊 Dashboard Analisis Data Pendidikan & Pengangguran")
 
+# ===============================
+# LOAD DATA
+# ===============================
+@st.cache_data
+def load_data():
+    return pd.read_csv("dataset/Data Training-1.csv")
 
-#memasukkan dan menampilkan dataset
-df = pd.read_csv('dataset/Data Training-1.csv')
-df
+df = load_data()
 
+st.subheader("Preview Dataset")
+st.dataframe(df.head())
 
-# In[4]:
+# ===============================
+# DATA QUALITY CHECK
+# ===============================
+st.subheader("Cek Missing Value")
+st.dataframe(df.isnull().sum())
 
+st.subheader("Statistik Deskriptif")
+st.dataframe(df.describe(include="all"))
 
-df.isnull().sum()
-
-
-# In[5]:
-
-
-df.describe(include='all')
-
-
-# In[6]:
-
-
-# Exploratory Data Analysis (EDA)
-mean_cnt_by_belum_sekolah = df['Tidak/belum pernah sekolah'].mean()
-mean_cnt_by_belum_sd = df['Tidak/belum tamat SD'].mean()
-mean_cnt_by_sd = df['SD'].mean()
-mean_cnt_by_smp = df['SLTP'].mean()
-
-mean_cnt_by_sma = df['SLTA Umum/SMU'].mean()
-mean_cnt_by_smk = df['SLTA Kejuruan/SMK'].mean()
-
-mean_cnt_by_diploma = df['Akademi/Diploma'].mean()
-mean_cnt_by_sarjana = df['Universitas'].mean()
-
-
-# In[7]:
-
+# ===============================
+# EDA - Rata-rata Pendidikan
+# ===============================
+st.subheader("Rata-rata Jumlah Penduduk Berdasarkan Tingkat Pendidikan")
 
 mean_education_df = pd.DataFrame({
     "Tingkat Pendidikan": [
@@ -65,52 +55,56 @@ mean_education_df = pd.DataFrame({
         "Universitas"
     ],
     "Rata-rata Jumlah Penduduk": [
-        mean_cnt_by_belum_sekolah,
-        mean_cnt_by_belum_sd,
-        mean_cnt_by_sd,
-        mean_cnt_by_smp,
-        mean_cnt_by_sma,
-        mean_cnt_by_smk,
-        mean_cnt_by_diploma,
-        mean_cnt_by_sarjana
+        df['Tidak/belum pernah sekolah'].mean(),
+        df['Tidak/belum tamat SD'].mean(),
+        df['SD'].mean(),
+        df['SLTP'].mean(),
+        df['SLTA Umum/SMU'].mean(),
+        df['SLTA Kejuruan/SMK'].mean(),
+        df['Akademi/Diploma'].mean(),
+        df['Universitas'].mean()
     ]
 })
 
-mean_education_df
+st.dataframe(mean_education_df)
 
-
-# In[8]:
-
-
-plt.figure(figsize=(10, 6))
-sns.barplot(data=mean_education_df,
+# Plot Bar Chart
+fig1, ax1 = plt.subplots(figsize=(10, 6))
+sns.barplot(
+    data=mean_education_df,
     x="Tingkat Pendidikan",
-    hue="Tingkat Pendidikan",
     y="Rata-rata Jumlah Penduduk",
-    palette="magma"
+    palette="magma",
+    ax=ax1
 )
 plt.xticks(rotation=35, ha="right")
 plt.title("Rata-rata Jumlah Penduduk Berdasarkan Tingkat Pendidikan")
-plt.ylabel("Rata-rata Jumlah Penduduk")
 plt.tight_layout()
-plt.show()
 
+st.pyplot(fig1)
 
-# In[ ]:
+# ===============================
+# Total Pengangguran per Periode
+# ===============================
+st.subheader("Total Pengangguran Berdasarkan Periode")
 
+total_pengangguran_per_tahun = (
+    df.groupby('Periode')['Total']
+    .mean()
+    .sort_index()
+)
 
-df.groupby('Periode')['Total'].mean().sort_values()
-
-
-# In[ ]:
-
-
-total_pengangguran_per_tahun = df.groupby('Periode')['Total'].mean().sort_values(ascending=False)
-
-plt.figure(figsize=(10, 6))
-sns.lineplot(data=total_pengangguran_per_tahun)
-plt.plot(total_pengangguran_per_tahun.index, total_pengangguran_per_tahun.values)
+fig2, ax2 = plt.subplots(figsize=(10, 6))
+sns.lineplot(
+    x=total_pengangguran_per_tahun.index,
+    y=total_pengangguran_per_tahun.values,
+    ax=ax2
+)
 plt.xlabel("Periode")
 plt.ylabel("Total Pengangguran")
-plt.title("Total Pengangguran Berdasarkan Periode")
+plt.title("Trend Total Pengangguran")
+plt.tight_layout()
 
+st.pyplot(fig2)
+
+st.success("Dashboard berhasil dijalankan 🚀")
